@@ -120,40 +120,37 @@ pipeline {
             }
         }
 
-    stage('Scale up and down each service') {
-        steps {
-            script {
-                def scaling = input(
-                    message: 'Escolha quantas instâncias de cada books deseja adicionar:',
-                    parameters: [
-                        string(defaultValue: '4', description: 'Numero de instâncias do book_1', name: '1_INPUT'),
-                        string(defaultValue: '4', description: 'Numero de instâncias do book_2', name: '2_INPUT')
-                    ]
-                )
+stage('Scale up and down each service') {
+    steps {
+        script {
+            def scaling = input(
+                message: 'Escolha quantas instâncias de cada books deseja adicionar:',
+                parameters: [
+                    string(defaultValue: '4', description: 'Numero de instâncias do book_1', name: '1_INPUT'),
+                    string(defaultValue: '4', description: 'Numero de instâncias do book_2', name: '2_INPUT')
+                ]
+            )
 
-                echo "Deploying to Development Environment with scaling: lmsbooks_1=${scaling.'1_INPUT'}, lmsbooks_2=${scaling.'2_INPUT'}"
+            echo "Deploying to Development Environment with scaling: lmsbooks_1=${scaling.'1_INPUT'}, lmsbooks_2=${scaling.'2_INPUT'}"
 
-                // Defina o timeout em 20 segundos
-                def scaleTimeout = 20
+            // Defina o timeout em 20 segundos
+            def scaleTimeout = 20
 
-                if (isUnix()) {
-                    // Usar o comando 'timeout' para limitar o tempo de execução do docker-compose
-                    sh """
-                        timeout ${scaleTimeout} docker-compose -f docker-compose-test.yml down
-                        timeout ${scaleTimeout} docker-compose -f docker-compose-test.yml up --scale book_1=${scaling.'1_INPUT'} --scale book_2=${scaling.'2_INPUT'}
-                    """
-                } else {
-                    bat """
-                        timeout /t ${scaleTimeout} docker-compose -f docker-compose-test.yml down
-                        timeout /t ${scaleTimeout} docker-compose -f docker-compose-test.yml up --scale book_1=${scaling.'1_INPUT'} --scale book_2=${scaling.'2_INPUT'}
-                    """
-                }
+            if (isUnix()) {
+                // Usar 'gtimeout' após instalar coreutils no macOS
+                sh """
+                    gtimeout ${scaleTimeout} docker-compose -f docker-compose-test.yml down
+                    gtimeout ${scaleTimeout} docker-compose -f docker-compose-test.yml up --scale book_1=${scaling.'1_INPUT'} --scale book_2=${scaling.'2_INPUT'}
+                """
+            } else {
+                bat """
+                    timeout /t ${scaleTimeout} docker-compose -f docker-compose-test.yml down
+                    timeout /t ${scaleTimeout} docker-compose -f docker-compose-test.yml up --scale book_1=${scaling.'1_INPUT'} --scale book_2=${scaling.'2_INPUT'}
+                """
             }
         }
     }
-
-
-
+}
 
          stage('Wait for Manual Approval') {
                     steps {
