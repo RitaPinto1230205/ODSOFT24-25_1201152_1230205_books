@@ -66,6 +66,18 @@ pipeline {
             }
         }
 
+        stage('Run Tests Against Container') {
+                    steps {
+                        dir('lms-books') {
+                            script {
+                                sh """
+                                    ${MAVEN_HOME}/bin/mvn verify -Dtest.container.url=http://localhost:${SERVER_PORT}
+                                """
+                            }
+                        }
+                    }
+                }
+
        stage('Build Docker Image') {
             steps {
                 dir('lms-books') {
