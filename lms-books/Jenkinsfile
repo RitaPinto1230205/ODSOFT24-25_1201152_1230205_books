@@ -168,5 +168,11 @@ pipeline {
         failure {
             echo 'Pipeline failed!'
         }
+         always {
+                    echo 'Cleaning up resources...'
+                    dir('lms-books') {
+                        sh 'docker-compose down --remove-orphans || true'
+                    }
+                }
     }
 }
