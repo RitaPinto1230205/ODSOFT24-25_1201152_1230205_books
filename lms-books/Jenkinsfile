@@ -10,24 +10,31 @@ pipeline {
         IMAGE_TAG = 'latest'
         GITHUB_TOKEN_ID = 'GITHUB_TOKEN'
         DEPLOYMENT_APPROVED = false
+        healthcheck:
+              test: ["CMD", "curl", "-f", "http://localhost:2226/health"]
+              interval: 30s
+              timeout: 10s
+              retries: 3
     }
 
     stages {
-        stage('Install Java 21.0.4-amzn with SDKMAN!') {
-            steps {
-                script {
-                    sh '''
-                        if [ ! -d "$HOME/.sdkman" ]; then
-                          curl -s "https://get.sdkman.io" | bash
-                          source "$HOME/.sdkman/bin/sdkman-init.sh"
-                        fi
-                        source "$HOME/.sdkman/bin/sdkman-init.sh"
-                        sdk install java 21.0.4-amzn || true
-                        sdk default java 21.0.4-amzn
-                    '''
-                }
-            }
-        }
+          stage('Install Java 21.0.4-amzn with SDKMAN!') {
+                        steps {
+                            script {
+                                sh '''
+                                    # Instalar SDKMAN! (se necessário)
+                                    if [ ! -d "$HOME/.sdkman" ]; then
+                                      curl -s "https://get.sdkman.io" | bash
+                                      source "$HOME/.sdkman/bin/sdkman-init.sh"
+                                    fi
+                                    # Instalar a versão do Java 21.0.4-amzn
+                                    source "$HOME/.sdkman/bin/sdkman-init.sh"
+                                    sdk install java 21.0.4-amzn || true  # Ignora se já estiver instalado
+                                    sdk default java 21.0.4-amzn
+                                '''
+                            }
+                        }
+                    }
 
         stage('Check Out') {
             steps {
@@ -65,26 +72,33 @@ pipeline {
         }
 
         stage('Run Tests Against Container') {
-            steps {
-                dir('lms-books') {
-                    script {
-                        sh """
-                            ${MAVEN_HOME}/bin/mvn verify -Dtest.container.url=http://localhost:${SERVER_PORT}
-                        """
+                    steps {
+                        dir('lms-books') {
+                            script {
+                                sh """
+                                    ${MAVEN_HOME}/bin/mvn verify -Dtest.container.url=http://localhost:${SERVER_PORT}
+                                """
+                            }
+                        }
                     }
                 }
-            }
-        }
 
-        stage('Build Docker Image') {
+       stage('Build Docker Image') {
             steps {
                 dir('lms-books') {
                     script {
                         withCredentials([string(credentialsId: GITHUB_TOKEN_ID, variable: 'GITHUB_TOKEN')]) {
-                            sh """
-                                echo \$GITHUB_TOKEN | docker login ghcr.io -u RitaPinto1230205 --password-stdin
-                                docker build -t ${IMAGE_NAME}:latest .
-                            """
+                            if (isUnix()) {
+                                sh """
+                                    echo \$GITHUB_TOKEN | docker login ghcr.io -u RitaPinto1230205 --password-stdin
+                                    docker build -t ${IMAGE_NAME}:latest .
+                                """
+                            } else {
+                                bat """
+                                    echo %GITHUB_TOKEN% | docker login ghcr.io -u RitaPinto1230205 --password-stdin
+                                    docker build -t ${IMAGE_NAME}:latest .
+                                """
+                            }
                         }
                     }
                 }
@@ -96,50 +110,49 @@ pipeline {
                 dir('lms-books') {
                     script {
                         withCredentials([string(credentialsId: GITHUB_TOKEN_ID, variable: 'GITHUB_TOKEN')]) {
-                            sh """
-                                docker push ${IMAGE_NAME}:latest
-                            """
+                            if (isUnix()) {
+                                sh """
+                                    docker push ${IMAGE_NAME}:latest
+                                """
+                            } else {
+                                bat """
+                                    docker push ${IMAGE_NAME}:latest
+                                """
+                            }
                         }
                     }
                 }
             }
         }
 
-        stage('Wait for Manual Approval') {
-            steps {
-                input message: 'Deployment is ready. Do you want to continue?', parameters: [
-                    booleanParam(defaultValue: false, description: 'Approve deployment?', name: 'DeployApproval')
-                ]
-                script {
-                    DEPLOYMENT_APPROVED = params.DeployApproval
+         stage('Wait for Manual Approval') {
+                    steps {
+                        input message: 'Deployment is ready. Do you want to continue?', parameters: [
+                            booleanParam(defaultValue: false, description: 'Approve deployment?', name: 'DeployApproval')
+                        ]
+                        script {
+                            DEPLOYMENT_APPROVED = params.DeployApproval
+                        }
+                    }
                 }
-            }
-        }
 
-        stage('Deploy with Rolling Updates') {
+        stage('Deploy Using Docker Compose') {
             steps {
                 dir('lms-books') {
                     script {
-                        sh '''
-                            # Pull the latest images for both containers
-                            docker-compose pull
-
-                            # Perform rolling update for both containers (without restarting dependencies)
-                            docker-compose up -d --no-deps --build
-
-                            # Wait until both containers are healthy
-                            until [ "$(docker inspect --format='{{json .State.Health.Status}}' books1_in_lms_network)" == '"healthy"' ]; do
-                                echo "Waiting for container books1_in_lms_network to be healthy..."
-                                sleep 5
-                            done
-
-                            until [ "$(docker inspect --format='{{json .State.Health.Status}}' books2_in_lms_network)" == '"healthy"' ]; do
-                                echo "Waiting for container books2_in_lms_network to be healthy..."
-                                sleep 5
-                            done
-
-                            echo "Both containers updated with no downtime!"
-                        '''
+                        if (isUnix()) {
+                            sh '''
+                                docker-compose down
+                                docker-compose pull
+                                docker-compose up -d
+                            '''
+                        } else {
+                            bat '''
+                                docker-compose down
+                                docker-compose pull
+                                docker-compose up -d
+                            '''
+                        }
                     }
                 }
             }
