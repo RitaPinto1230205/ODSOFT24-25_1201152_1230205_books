@@ -101,54 +101,58 @@ pipeline {
             }
         }
 
-        stage('Scale Up and Down Services') {
-            steps {
-                script {
-                    def scaling = input(
-                        message: 'Specify scaling action and instances for book01 and book02:',
-                        parameters: [
-                            choice(
-                                choices: ['Scale Up', 'Scale Down'],
-                                description: 'Choose whether to scale up or scale down the services.',
-                                name: 'scaleAction'
-                            ),
-                            string(
-                                defaultValue: '4',
-                                description: 'Number of instances for book01',
-                                name: 'scaleBook01'
-                            ),
-                            string(
-                                defaultValue: '4',
-                                description: 'Number of instances for book02',
-                                name: 'scaleBook02'
-                            )
-                        ]
-                    )
+          stage('Scale Up and Down Services') {
+                   steps {
+                       script {
 
-                    echo "Scaling action: ${scaling.scaleAction}"
-                    echo "Scaling services: book01=${scaling.scaleBook01}, book02=${scaling.scaleBook02}"
+                           def scaling = input(
+                               message: 'Specify scaling action and instances for book01 and book02:',
+                               parameters: [
 
-                    dir('lms-books') {
-                        echo "Scaling down existing services..."
-                        sh """
-                            docker-compose -f docker-compose-${ENVIRONMENT}.yml down --remove-orphans
-                        """
+                                   choice(
+                                       choices: ['Scale Up', 'Scale Down'],
+                                       description: 'Choose whether to scale up or scale down the services.',
+                                       name: 'scaleAction'
+                                   ),
 
-                        if (scaling.scaleAction == 'Scale Up') {
-                            echo "Scaling up services..."
-                            sh """
-                                docker-compose -f docker-compose-${ENVIRONMENT}.yml up --scale book01=${scaling.scaleBook01} --scale book02=${scaling.scaleBook02} -d
-                            """
-                        } else if (scaling.scaleAction == 'Scale Down') {
-                            echo "Scaling down services..."
-                            sh """
-                                docker-compose -f docker-compose-${ENVIRONMENT}.yml up --scale book01=0 --scale book02=0 -d
-                            """
-                        }
-                    }
-                }
-            }
-        }
+                                   string(
+                                       defaultValue: '4',
+                                       description: 'Number of instances for book01',
+                                       name: 'scaleBook01'
+                                   ),
+
+                                   string(
+                                       defaultValue: '4',
+                                       description: 'Number of instances for book02',
+                                       name: 'scaleBook02'
+                                   )
+                               ]
+                           )
+
+                           echo "Scaling action: ${scaling.scaleAction}"
+                           echo "Scaling services: book01=${scaling.scaleBook01}, book02=${scaling.scaleBook02}"
+
+                           dir('lms-books') {
+                               echo "Scaling down existing services..."
+                               sh """
+                                   docker-compose -f docker-compose-test.yml down --remove-orphans
+                               """
+
+                                if (scaling.scaleAction == 'Scale Up') {
+                                   echo "Scaling up services..."
+                                   sh """
+                                       docker-compose -f docker-compose-test.yml up --scale book01=${scaling.scaleBook01} --scale book02=${scaling.scaleBook02} -d
+                                   """
+                               } else if (scaling.scaleAction == 'Scale Down') {
+                                   echo "Scaling down services..."
+                                   sh """
+                                       docker-compose -f docker-compose-test.yml up --scale book01=0 --scale book02=0 -d
+                                   """
+                               }
+                           }
+                       }
+                   }
+               }
 
         stage('Deploy to Dev') {
             steps {
