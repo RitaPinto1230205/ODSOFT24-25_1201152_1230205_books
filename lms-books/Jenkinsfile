@@ -121,13 +121,24 @@ pipeline {
                 dir('lms-books') {
                     script {
                         sh '''
+                            # Pull the latest images for both containers
                             docker-compose pull
+
+                            # Perform rolling update for both containers (without restarting dependencies)
                             docker-compose up -d --no-deps --build
-                            until [ "$(docker inspect --format='{{json .State.Health.Status}}' $(docker-compose ps -q lmsbooks))" == '"healthy"' ]; do
-                                echo "Waiting for container to be healthy..."
+
+                            # Wait until both containers are healthy
+                            until [ "$(docker inspect --format='{{json .State.Health.Status}}' books1_in_lms_network)" == '"healthy"' ]; do
+                                echo "Waiting for container books1_in_lms_network to be healthy..."
                                 sleep 5
                             done
-                            echo "Service updated with no downtime!"
+
+                            until [ "$(docker inspect --format='{{json .State.Health.Status}}' books2_in_lms_network)" == '"healthy"' ]; do
+                                echo "Waiting for container books2_in_lms_network to be healthy..."
+                                sleep 5
+                            done
+
+                            echo "Both containers updated with no downtime!"
                         '''
                     }
                 }
