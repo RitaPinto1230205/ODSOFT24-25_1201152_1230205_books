@@ -7,7 +7,7 @@
       </elementProp>
     </TestPlan>
     <hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="GetAuthourStressTest" enabled="false">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="PostAuthourStressTest" enabled="false">
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
           <stringProp name="LoopController.loops">1</stringProp>
         </elementProp>
@@ -24,6 +24,7 @@
               <stringProp name="Header.name">Authorization</stringProp>
               <stringProp name="Header.value">Bearer eyJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJleGFtcGxlLmlvIiwic3ViIjoiMixtYXJpYUBnbWFpbC5jb20iLCJleHAiOjE3MzU5ODQyMjcsImlhdCI6MTczNTk0ODIyNywicm9sZXMiOiJMSUJSQVJJQU4ifQ.LDxHWl-V4LMElQ07QI2mtEJQ5Y9ZX10IgUORnG7Sf6NptmmnQPvpGcJPKn_h6UyN171tGKhq2zX1Xl8-f-6_kBweISd-fD55vnRUQnNFxCC8avs9FYQaPQ4HN_SeNlPz0hfbKyalrA5RqktfrkaK0UzgELR7gmMV123l1VjS7V6jdXGWoLT7o69cbyvOipqiL2kShOGKwTlglfSM1XQNl3NMYsskzfT6gJLj26Kx0PjLb55-cNPfqBDH8PMzjN9oIyoSGSlawdfKa05j8ugLUHzMyE6TIg5lRxAQe0iUNrAWxIfzmva7L57Gif2HDBQlbPDpImyoCOUNxkaQ_BVi34v6ErlfU6q_sWCjsvrMOkMpfEj8eRPS3Wqew4t7a0hscGtkxlXEFW05XnWf_DgseB49feUx0_HlD3-o35sCc70u90p574DX6dmPwJNOs6yN-HJs1dNfUnizNG70fA64C2JNLJkYL3CBhQypmJ9kyOJb6K50zJ4VJeNr5x64xML_XCiVsiIJKcDymnwM9xZMAvb_f1RNP4YmTcyVCToXgYnSrTBmBFzUh7kcl5qMOz_0jix-qL8HtLAeRwYZKJD4fLp5bOFVXGaTQIpC0X5_tEkF0yGDG4XgjeynTFWGLr6UnzJJkQKzNj6x9vOYuUKsAWrehkUwdVzCnq5baPSzJMU </stringProp>
             </elementProp>
+            <elementProp name="" elementType="Header"/>
           </collectionProp>
         </HeaderManager>
         <hashTree/>
@@ -33,8 +34,8 @@
           </elementProp>
           <stringProp name="HTTPSampler.domain">localhost</stringProp>
           <stringProp name="HTTPSampler.port">8088</stringProp>
-          <stringProp name="HTTPSampler.path">/api/authors?name=Ricardo Queirós</stringProp>
-          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <stringProp name="HTTPSampler.path">/api/authors?name=Fernando Pessoa&amp;bio=Fino ou imperial</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
           <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
           <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
         </HTTPSamplerProxy>
@@ -114,7 +115,7 @@
         </ResultCollector>
         <hashTree/>
       </hashTree>
-      <com.blazemeter.jmeter.threads.concurrency.ConcurrencyThreadGroup guiclass="com.blazemeter.jmeter.threads.concurrency.ConcurrencyThreadGroupGui" testclass="com.blazemeter.jmeter.threads.concurrency.ConcurrencyThreadGroup" testname="GetAutherLoadTest">
+      <com.blazemeter.jmeter.threads.concurrency.ConcurrencyThreadGroup guiclass="com.blazemeter.jmeter.threads.concurrency.ConcurrencyThreadGroupGui" testclass="com.blazemeter.jmeter.threads.concurrency.ConcurrencyThreadGroup" testname="PostAutherLoadTest">
         <elementProp name="ThreadGroup.main_controller" elementType="com.blazemeter.jmeter.control.VirtualUserController"/>
         <stringProp name="TargetLevel">2000</stringProp>
         <stringProp name="RampUp">2</stringProp>
@@ -205,8 +206,8 @@
           </elementProp>
           <stringProp name="HTTPSampler.domain">localhost</stringProp>
           <stringProp name="HTTPSampler.port">8088</stringProp>
-          <stringProp name="HTTPSampler.path">/api/authors?name=Ricardo Queirós</stringProp>
-          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <stringProp name="HTTPSampler.path">/api/authors?name=Fernando Pessoa&amp;bio=Fino ou imperial</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
           <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
           <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
         </HTTPSamplerProxy>
