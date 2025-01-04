@@ -102,23 +102,23 @@ pipeline {
         stage('Scale Up and Down Services') {
             steps {
                 script {
-                    // Entrada para número de instâncias e ação (aumentar ou diminuir)
+
                     def scaling = input(
                         message: 'Specify scaling action and instances for book01 and book02:',
                         parameters: [
-                            // Parâmetro para escolher a ação: aumentar ou diminuir
+
                             choice(
                                 choices: ['Scale Up', 'Scale Down'],
                                 description: 'Choose whether to scale up or scale down the services.',
                                 name: 'scaleAction'
                             ),
-                            // Parâmetro para o número de instâncias do book01
+
                             string(
                                 defaultValue: '4',
                                 description: 'Number of instances for book01',
                                 name: 'scaleBook01'
                             ),
-                            // Parâmetro para o número de instâncias do book02
+
                             string(
                                 defaultValue: '4',
                                 description: 'Number of instances for book02',
@@ -131,22 +131,18 @@ pipeline {
                     echo "Scaling services: book01=${scaling.scaleBook01}, book02=${scaling.scaleBook02}"
 
                     dir('lms-books') {
-                        // Antes de escalar, parar e remover containers órfãos
                         echo "Scaling down existing services..."
                         sh """
                             docker-compose -f docker-compose-test.yml down --remove-orphans
                         """
 
-                        // Condicional para decidir se vamos escalar para cima ou para baixo
-                        if (scaling.scaleAction == 'Scale Up') {
+                         if (scaling.scaleAction == 'Scale Up') {
                             echo "Scaling up services..."
                             sh """
                                 docker-compose -f docker-compose-test.yml up --scale book01=${scaling.scaleBook01} --scale book02=${scaling.scaleBook02} -d
                             """
                         } else if (scaling.scaleAction == 'Scale Down') {
                             echo "Scaling down services..."
-                            // Diminuir as instâncias (geralmente, "docker-compose down" já é suficiente)
-                            // Não é possível especificar diretamente quantas instâncias escalar para baixo no `docker-compose up` (sem recriar containers manualmente), então uma solução é ajustar manualmente a quantidade de instâncias no arquivo `docker-compose.yml` e usar o `docker-compose down` novamente.
                             sh """
                                 docker-compose -f docker-compose-test.yml up --scale book01=0 --scale book02=0 -d
                             """
@@ -169,28 +165,34 @@ pipeline {
                     }
                 }
 
-        stage('Deploy Using Docker Compose') {
-            steps {
-                dir('lms-books') {
-                    script {
-                        if (isUnix()) {
-                            sh '''
-                                docker-compose down
-                                docker-compose pull
-                                docker-compose up -d
-                            '''
-                        } else {
-                            bat '''
-                                docker-compose down
-                                docker-compose pull
-                                docker-compose up -d
-                            '''
-                        }
-                    }
-                }
-            }
-        }
-    }
+         stage('Deploy with Docker Compose') {
+                   steps {
+                   dir('lms-books') {
+                       script {
+                           sh """
+
+                               if ! docker ps --filter "name=rabbitmq_in_lms_network" --format '{{.Names}}' | grep -q rabbitmq_in_lms_network; then
+                                 docker compose -f docker-compose-rabbitmq+postgres.yml up -d
+                               else
+                                 echo "RabbitMQ container already running."
+                               fi
+
+                               if ! docker ps --filter "name=postgres_in_lms_network" --format '{{.Names}}' | grep -q postgres_in_lms_network; then
+                                 docker compose -f docker-compose-rabbitmq+postgres.yml up -d
+                               else
+                                 echo "Postgres container already running."
+                               fi
+
+
+                               docker compose -f docker-compose.yml up -d --force-recreate
+
+                           """
+                       }
+                   }
+                   }
+               }
+           }
+
 
     post {
         success {
