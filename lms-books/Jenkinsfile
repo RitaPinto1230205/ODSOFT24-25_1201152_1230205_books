@@ -99,40 +99,32 @@ pipeline {
             }
         }
 
-       stage('Scale Up and Down Services') {
-           steps {
-               script {
-                   // Pegue o número atual de instâncias
-                   def currentScaleBook01 = 4 // Valor inicial (pode ser ajustado conforme o número de instâncias atuais)
-                   def currentScaleBook02 = 4 // Valor inicial (pode ser ajustado conforme o número de instâncias atuais)
+        stage('Scale Up and Down Services') {
+                   steps {
+                       script {
+                           // Entrada para número de instâncias
+                           def scaling = input(
+                               message: 'Specify scaling for book01 and book02:',
+                               parameters: [
+                                   string(defaultValue: '4', description: 'Number of instances for book01', name: 'scaleBook01'),
+                                   string(defaultValue: '4', description: 'Number of instances for book02', name: 'scaleBook02')
+                               ]
+                           )
 
-                   // Solicita ao usuário o número de instâncias desejadas
-                   def scaling = input(
-                       message: 'Escolha quantas instâncias de cada serviço você deseja adicionar ou remover:',
-                       parameters: [
-                           // Permitir aumentar ou diminuir as instâncias
-                           number(defaultValue: currentScaleBook01, description: 'Número de instâncias do book01 (pode ser maior ou menor que o valor atual)', name: 'scaleBook01'),
-                           number(defaultValue: currentScaleBook02, description: 'Número de instâncias do book02 (pode ser maior ou menor que o valor atual)', name: 'scaleBook02')
-                       ]
-                   )
+                           echo "Scaling services: book01=${scaling.scaleBook01}, book02=${scaling.scaleBook02}"
 
-                   // Mostra os valores definidos
-                   echo "Deploying to Development Environment with scaling: book01=${scaling.scaleBook01}, book02=${scaling.scaleBook02}"
+                           dir('lms-books') {
+                               sh """
+                                   echo "Scaling down existing services..."
+                                   docker-compose -f docker-compose-test.yml down --remove-orphans
 
-                   // Definindo tempo limite para a operação de scaling
-                   def scaleTimeout = 60
-
-                   dir('lms-books') {
-                       // Executando o scale down e up
-                       sh """
-                           gtimeout ${scaleTimeout} docker-compose -f docker-compose-test.yml down --remove-orphans
-                           gtimeout ${scaleTimeout} docker-compose -f docker-compose-test.yml up --scale book01=${scaling.scaleBook01} --scale book02=${scaling.scaleBook02} -d
-                       """
+                                   echo "Scaling up services..."
+                                   docker-compose -f docker-compose-test.yml up --scale book01=${scaling.scaleBook01} --scale book02=${scaling.scaleBook02} -d
+                               """
+                           }
+                       }
                    }
                }
-           }
-       }
-
 
 
          stage('Wait for Manual Approval') {
