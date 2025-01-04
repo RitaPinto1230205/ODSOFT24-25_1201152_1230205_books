@@ -112,7 +112,7 @@ pipeline {
 
                            echo "Deploying to Development Environment with scaling: lmsbooks_1=${scaling.'1_INPUT'}, lmsbooks_2=${scaling.'2_INPUT'}"
 
-                           def scaleTimeout = 20  // Timeout em segundos
+                           def scaleTimeout = 60  // Timeout em segundos
 
                            if (isUnix()) {
                                // Navega para o diretório correto antes de executar o comando
