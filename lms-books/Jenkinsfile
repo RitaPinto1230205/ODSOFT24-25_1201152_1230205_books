@@ -1,3 +1,12 @@
+// Definição do método rollback fora da pipeline
+def rollback() {
+    echo 'Rolling back to the previous version...'
+    sh """
+        docker-compose -f docker-compose-prod.yml down
+        docker-compose -f docker-compose-prod.yml up -d --no-deps --scale book01=2 --scale book02=2
+    """
+}
+
 pipeline {
     agent any
 
@@ -92,7 +101,6 @@ pipeline {
             }
         }
 
-        // Stage para escalonamento dos serviços (Scale Up and Down)
         stage('Scale Up and Down Services') {
             steps {
                 script {
@@ -142,7 +150,6 @@ pipeline {
             }
         }
 
-        // Deploy para o ambiente Dev
         stage('Deploy to Dev') {
             steps {
                 script {
@@ -155,7 +162,6 @@ pipeline {
             }
         }
 
-        // Testes no ambiente de Dev
         stage('Test on Dev') {
             steps {
                 script {
@@ -172,7 +178,6 @@ pipeline {
             }
         }
 
-        // Aprovação Manual para o próximo estágio (Test)
         stage('Wait for Manual Approval to Deploy to Test') {
             steps {
                 input message: 'Approve deploy to Test?', parameters: [
@@ -184,7 +189,6 @@ pipeline {
             }
         }
 
-        // Deploy para o ambiente de Test
         stage('Deploy to Test') {
             steps {
                 script {
@@ -197,7 +201,6 @@ pipeline {
             }
         }
 
-        // Testes no ambiente de Test
         stage('Test on Test') {
             steps {
                 script {
@@ -214,7 +217,6 @@ pipeline {
             }
         }
 
-        // Aprovação Manual para o próximo estágio (Prod)
         stage('Wait for Manual Approval to Deploy to Prod') {
             steps {
                 input message: 'Approve deploy to Prod?', parameters: [
@@ -226,7 +228,6 @@ pipeline {
             }
         }
 
-        // Deploy para o ambiente Prod
         stage('Deploy to Prod') {
             steps {
                 script {
@@ -239,7 +240,6 @@ pipeline {
             }
         }
 
-        // Testes em Produção
         stage('Test on Prod') {
             steps {
                 script {
@@ -263,14 +263,5 @@ pipeline {
         failure {
             echo 'Pipeline failed!'
         }
-    }
-
-    // Função de rollback em produção
-    def rollback() {
-        echo 'Rolling back to the previous version...'
-        sh """
-            docker-compose -f docker-compose-prod.yml down
-            docker-compose -f docker-compose-prod.yml up -d --no-deps --scale book01=2 --scale book02=2
-        """
     }
 }
