@@ -1,0 +1,45 @@
+services:
+  book01:
+    image: lmsbooks:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "7062-7068:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: instance1,bootstrap,dev
+    networks:
+      - lms_network
+    volumes:
+      - "uploaded_files_volume_1:/tmp"
+    deploy:
+      replicas: 1
+    privileged: true
+
+  book02:
+    image: lmsbooks:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "7052-7058:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: instance2,bootstrap,dev
+    networks:
+      - lms_network
+    volumes:
+      - "uploaded_files_volume_2:/tmp"
+    deploy:
+      replicas: 1
+    privileged: true
+
+
+
+networks:
+  lms_network:
+    external: true
+
+volumes:
+  uploaded_files_volume_1:
+  uploaded_files_volume_2:
+  postgres_data_prod:
