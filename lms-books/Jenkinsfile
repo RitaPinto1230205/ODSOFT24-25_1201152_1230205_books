@@ -93,6 +93,7 @@ pipeline {
 
         stage('Test on Development Environment') {
             steps {
+             dir('lms-books') {
                 script {
                     echo "Running tests on Dev..."
                     def success = sh(script: "curl -f http://localhost:${SERVER_PORT}/health", returnStatus: true) == 0
@@ -106,6 +107,7 @@ pipeline {
                     } else {
                         echo 'Tests passed on Dev.'
                     }
+                }
                 }
             }
         }
@@ -137,6 +139,7 @@ pipeline {
 
         stage('Test on Testing Environment') {
             steps {
+             dir('lms-books') {
                 script {
                     echo "Running tests on Test..."
                     def success = sh(script: "curl -f http://localhost:${SERVER_PORT}/health", returnStatus: true) == 0
@@ -151,6 +154,7 @@ pipeline {
                     } else {
                         echo 'Tests passed on Test.'
                     }
+                }
                 }
             }
         }
@@ -182,6 +186,7 @@ pipeline {
 
         stage('Test on Production Environment') {
             steps {
+             dir('lms-books') {
                 script {
                     echo "Running tests on Prod..."
                     def success = sh(script: "curl -f http://localhost:${SERVER_PORT}/health", returnStatus: true) == 0
@@ -194,6 +199,7 @@ pipeline {
                     } else {
                         echo 'Tests passed on Prod.'
                     }
+                }
                 }
             }
         }
