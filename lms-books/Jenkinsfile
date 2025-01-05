@@ -77,16 +77,124 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Deploy to Development Environment') {
             steps {
                 dir('lms-books') {
                     script {
-                        withCredentials([string(credentialsId: GITHUB_TOKEN_ID, variable: 'GITHUB_TOKEN')]) {
-                            echo 'Pushing Docker image to registry...'
-                            sh """
-                                docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                            """
-                        }
+                        echo "Deploying to Dev environment..."
+                        sh """
+                            docker-compose -f docker-compose-dev.yml down --remove-orphans
+                            docker-compose -f docker-compose-dev.yml up -d --force-recreate
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Test on Development Environment') {
+            steps {
+                script {
+                    echo "Running tests on Dev..."
+                    def success = sh(script: "curl -f http://localhost:${SERVER_PORT}/health", returnStatus: true) == 0
+                    if (!success) {
+                        echo 'Test failed on Dev. Aborting pipeline.'
+                        currentBuild.result = 'FAILURE'
+
+                        // Trigger rollback
+                        rollback('dev')
+
+                        return
+                    } else {
+                        echo 'Tests passed on Dev.'
+                    }
+                }
+            }
+        }
+
+        stage('Approval to Deploy to Testing Environment') {
+            steps {
+                input message: 'Approve deploy to Test?', parameters: [
+                    booleanParam(defaultValue: false, description: 'Approve deploy?', name: 'DeployApproval')
+                ]
+                script {
+                    DEPLOYMENT_APPROVED = params.DeployApproval
+                }
+            }
+        }
+
+        stage('Deploy to Testing Environment') {
+            steps {
+                dir('lms-books') {
+                    script {
+                        echo "Deploying to Test environment..."
+                        sh """
+                            docker-compose -f docker-compose-test.yml down --remove-orphans
+                            docker-compose -f docker-compose-test.yml up -d --force-recreate
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Test on Testing Environment') {
+            steps {
+                script {
+                    echo "Running tests on Test..."
+                    def success = sh(script: "curl -f http://localhost:${SERVER_PORT}/health", returnStatus: true) == 0
+                    if (!success) {
+                        echo 'Test failed on Test. Aborting pipeline.'
+                        currentBuild.result = 'FAILURE'
+
+                        // Trigger rollback
+                        rollback('test')
+
+                        return
+                    } else {
+                        echo 'Tests passed on Test.'
+                    }
+                }
+            }
+        }
+
+        stage('Approval to Deploy to Production Environment') {
+            steps {
+                input message: 'Approve deploy to Prod?', parameters: [
+                    booleanParam(defaultValue: false, description: 'Approve deploy?', name: 'DeployApproval')
+                ]
+                script {
+                    DEPLOYMENT_APPROVED = params.DeployApproval
+                }
+            }
+        }
+
+        stage('Deploy to Production Environment') {
+            steps {
+                dir('lms-books') {
+                    script {
+                        echo "Deploying to Prod environment..."
+                        sh """
+                            docker-compose -f docker-compose-prod.yml down --remove-orphans
+                            docker-compose -f docker-compose-prod.yml up -d --force-recreate
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Test on Production Environment') {
+            steps {
+                script {
+                    echo "Running tests on Prod..."
+                    def success = sh(script: "curl -f http://localhost:${SERVER_PORT}/health", returnStatus: true) == 0
+                    if (!success) {
+                        echo 'Test failed on Prod. Rolling back...'
+
+                        // Trigger rollback
+                        rollback('prod')
+
+                        return
+                    } else {
+                        echo 'Tests passed on Prod.'
                     }
                 }
             }
@@ -104,12 +212,12 @@ pipeline {
                                 name: 'scaleAction'
                             ),
                             string(
-                                defaultValue: '4',
+                                defaultValue: '1',
                                 description: 'Number of instances for book01',
                                 name: 'scaleBook01'
                             ),
                             string(
-                                defaultValue: '4',
+                                defaultValue: '1',
                                 description: 'Number of instances for book02',
                                 name: 'scaleBook02'
                             )
@@ -141,119 +249,48 @@ pipeline {
             }
         }
 
-        stage('Deploy to Dev') {
+        stage('Build Docker Image') {
             steps {
-             dir('lms-books') {
-                script {
-                    echo "Deploying to Dev environment..."
-                    sh """
-                        docker-compose -f docker-compose-dev.yml down --remove-orphans
-                        docker-compose -f docker-compose-dev.yml up -d --force-recreate
-                    """
-                }
-                }
-            }
-        }
-
-        stage('Test on Dev') {
-            steps {
-                script {
-                    echo "Running tests on Dev..."
-                    def success = sh(script: "curl -f http://localhost:${SERVER_PORT}/health", returnStatus: true) == 0
-                    if (!success) {
-                        echo 'Test failed on Dev. Aborting pipeline.'
-                        currentBuild.result = 'FAILURE'
-                        return
-                    } else {
-                        echo 'Tests passed on Dev.'
-                    }
-                }
-            }
-        }
-
-        stage('Wait for Manual Approval to Deploy to Test') {
-            steps {
-                input message: 'Approve deploy to Test?', parameters: [
-                    booleanParam(defaultValue: false, description: 'Approve deploy?', name: 'DeployApproval')
-                ]
-                script {
-                    DEPLOYMENT_APPROVED = params.DeployApproval
-                }
-            }
-        }
-
-        stage('Deploy to Test') {
-            steps {
-             dir('lms-books') {
-                script {
-                    echo "Deploying to Test environment..."
-                    sh """
-                        docker-compose -f docker-compose-test.yml down --remove-orphans
-                        docker-compose -f docker-compose-test.yml up -d --force-recreate
-                    """
-                }
-                }
-            }
-        }
-
-        stage('Test on Test') {
-            steps {
-                script {
-                    echo "Running tests on Test..."
-                    def success = sh(script: "curl -f http://localhost:${SERVER_PORT}/health", returnStatus: true) == 0
-                    if (!success) {
-                        echo 'Test failed on Test. Aborting pipeline.'
-                        currentBuild.result = 'FAILURE'
-                        return
-                    } else {
-                        echo 'Tests passed on Test.'
-                    }
-                }
-            }
-        }
-
-        stage('Wait for Manual Approval to Deploy to Prod') {
-            steps {
-                input message: 'Approve deploy to Prod?', parameters: [
-                    booleanParam(defaultValue: false, description: 'Approve deploy?', name: 'DeployApproval')
-                ]
-                script {
-                    DEPLOYMENT_APPROVED = params.DeployApproval
-                }
-            }
-        }
-
-        stage('Deploy to Prod') {
-            steps {
-             dir('lms-books') {
-                script {
-                    echo "Deploying to Prod environment..."
-                    sh """
-                        docker-compose -f docker-compose-prod.yml down --remove-orphans
-                        docker-compose -f docker-compose-prod.yml up -d --force-recreate
-                    """
-                }
-                }
-            }
-        }
-
-        stage('Test on Prod') {
-            steps {
-             dir('lms-books') {
-                script {
-                    echo "Running tests on Prod..."
-                    def success = sh(script: "curl -f http://localhost:${SERVER_PORT}/health", returnStatus: true) == 0
-                    if (!success) {
-                        echo 'Test failed on Prod. Rolling back...'
-                        echo 'Rolling back to the previous version...'
+                dir('lms-books') {
+                    script {
+                        echo 'Building Docker image...'
                         sh """
-                            docker-compose -f docker-compose-prod.yml down
-                            docker-compose -f docker-compose-prod.yml up -d --no-deps --scale book01=2 --scale book02=2
+                            docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
                         """
-                    } else {
-                        echo 'Tests passed on Prod.'
                     }
                 }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                dir('lms-books') {
+                    script {
+                        withCredentials([string(credentialsId: GITHUB_TOKEN_ID, variable: 'GITHUB_TOKEN')]) {
+                            echo 'Pushing Docker image to registry...'
+                            sh """
+                                docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                            """
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Using Docker Compose') {
+            script {
+                if (isUnix()) {
+                    sh '''
+                        docker-compose down
+                        docker-compose pull
+                        docker-compose up -d
+                    '''
+                } else {
+                    bat '''
+                        docker-compose down
+                        docker-compose pull
+                        docker-compose up -d
+                    '''
                 }
             }
         }
@@ -267,4 +304,25 @@ pipeline {
             echo 'Pipeline failed!'
         }
     }
+}
+
+def rollback(env) {
+    echo "Rolling back to the previous version in the ${env} environment..."
+    if (env == 'dev') {
+        sh """
+            docker-compose -f docker-compose-dev.yml down --remove-orphans
+            docker-compose -f docker-compose-backup-dev.yml up -d --force-recreate
+        """
+    } else if (env == 'test') {
+        sh """
+            docker-compose -f docker-compose-test.yml down --remove-orphans
+            docker-compose -f docker-compose-backup-test.yml up -d --force-recreate
+        """
+    } else if (env == 'prod') {
+        sh """
+            docker-compose -f docker-compose-prod.yml down --remove-orphans
+            docker-compose -f docker-compose-backup-prod.yml up -d --force-recreate
+        """
+    }
+    echo "Rollback completed in the ${env} environment."
 }
