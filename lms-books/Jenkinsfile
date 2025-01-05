@@ -278,22 +278,25 @@ pipeline {
         }
 
         stage('Deploy Using Docker Compose') {
-            script {
-                if (isUnix()) {
-                    sh '''
-                        docker-compose down
-                        docker-compose pull
-                        docker-compose up -d
-                    '''
-                } else {
-                    bat '''
-                        docker-compose down
-                        docker-compose pull
-                        docker-compose up -d
-                    '''
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh '''
+                            docker-compose down
+                            docker-compose pull
+                            docker-compose up -d
+                        '''
+                    } else {
+                        bat '''
+                            docker-compose down
+                            docker-compose pull
+                            docker-compose up -d
+                        '''
+                    }
                 }
             }
         }
+
     }
 
     post {
