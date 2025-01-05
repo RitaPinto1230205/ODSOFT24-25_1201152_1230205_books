@@ -28,6 +28,30 @@ services:
       replicas: 2
     privileged: true
 
+
+  # Blue-Green Deployment Example
+  book01_new:
+    image: lmsbooks:latest
+    ports:
+      - "7081-7084:8080"  # Porta separada para nova versão
+    environment:
+      SPRING_PROFILES_ACTIVE: instance1_new,bootstrap,prod
+    networks:
+      - lms_network
+    volumes:
+      - "uploaded_files_volume_3:/tmp"
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+    privileged: true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+
 networks:
   lms_network:
     external: true

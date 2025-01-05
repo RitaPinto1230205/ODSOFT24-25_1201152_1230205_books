@@ -1,28 +1,31 @@
 # ODSOFT24-25_1201152_1230205
 Desenvolvimento do trabalho de ODSOFT 24/25
 
-## Relatório Parte 1
+Relatório Parte 1
+
 
 # Índice
 
-- [1. Desenvolvimento da Pipeline CI/CD/CD](#1-desenvolvimento-da-pipeline-cicdcd)
-  - [1.1 Descrição e Argumentação](#11-descrição-e-argumentação)
-  - [1.2 Pipeline CI/CD/CD Independente para Cada Microserviço](#12-pipeline-cicdcd-independente-para-cada-microserviço)
-  - [1.3 Testes Baseados em Contratos de Consumidor](#13-testes-baseados-em-contratos-de-consumidor)
-  - [1.4 Construção de Imagem de Contêiner](#14-construção-de-imagem-de-contêiner)
-  - [1.5 Publicação de Imagens de Contêiner num Repositório](#15-publicação-de-imagens-de-contêiner-num-repositório)
-  - [1.6 Desdobramento em Serviço Docker em Servidores Virtuais ou Remotos](#16-desdobramento-em-serviço-docker-em-servidores-virtuais-ou-remotos)
+- [Development of CI/CD/CD pipeline (description and argumentation)](#1-development-of-cicd-pipeline)
+  - [1.1 - Development of CI/CD/CD pipeline (description and argumentation)](#11---jenkins-deployment-on-localhost-and-deis-remote-servers)
+  - [1.2 - Independent CI/CD/CD pipeline per microservice](#12---cicd-pipeline-stages-not-only-running-but-also-description-and-critical-analysis)
+  - [1.3 - Consumer-Driven Contract Tests](#13-pipeline-specification-read-checkout-from-scm)
+  - [1.4 - Container image build](#14-build-and-package)
+  - [1.5 - Container image push to repository](#15-static-code-analysis)
+  - [1.6 - Deployment on the Docker service on other DEl's virtual servers (or other cloud's remote servers)
+    ](#16-tests-by-type)
 
-- [2. Processo de Desdobramento](#2-processo-de-desdobramento)
-  - [2.1 Adoção de Ambientes de Desenvolvimento, Testes e Produção](#21-adoção-de-ambientes-de-desenvolvimento-testes-e-produção)
-  - [2.2 Desdobramento Decidido por Ação Humana](#22-desdobramento-decidido-por-ação-humana)
-  - [2.3 Reversão Automática para Versão Anterior](#23-reversão-automática-para-versão-anterior)
-  - [2.4 Testes Executados nos Contêiners](#24-testes-executados-nos-contêiners)
-  - [2.5 Escalabilidade de Serviços](#25-escalabilidade-de-serviços)
-  - [2.6 Testes de Desempenho](#26-testes-de-desempenho)
-  - [2.7 Atualizações Sem Tempo de Inatividade](#27-atualizações-sem-tempo-de-inatividade)
+- [2 DDeployment process (description and argumentation)](#2-improvement-of-automated-functional-software-tests-including-not-only-coverage-but-also-quality)
+  - [2.1 - Adoption of Development, Testing and Production environments](#21---unit-opaque-box-tests-domain-classes)
+  - [2.2 - Deployment is decided by the human trigering the pipeline after receiving the email or other type of messa](#22---unit-transparent-box-tests-domain-classes)
+  - [2.3 - Automatically roll-back each service to a previous version](#23-mutation-tests-domain-classes)
+  - [2.4 - Tests are run against the container](#24---integration-tests-controller-service-domain-repository-gateways-adapters)
+  - [2.5 - Acceptance tests](#25---acceptance-tests)
+  - [2.6 - Scale up and down each service](#25---acceptance-tests)
+  - [2.7 - Performance tests](#25---acceptance-tests)
+  - [2.8 - System do not have a downtime when updating a service](#25---acceptance-tests)
 
----
+
 
 ## 1. Desenvolvimento da Pipeline CI/CD/CD
 
