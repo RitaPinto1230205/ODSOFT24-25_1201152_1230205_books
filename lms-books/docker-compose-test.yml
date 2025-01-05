@@ -1,5 +1,5 @@
 services:
-  book01:
+  scaleBook01:
     image: lmsbooks:latest
     build:
       context: .
@@ -16,7 +16,7 @@ services:
       replicas: 1
     privileged: true
 
-  book02:
+  scaleBook02:
     image: lmsbooks:latest
     build:
       context: .

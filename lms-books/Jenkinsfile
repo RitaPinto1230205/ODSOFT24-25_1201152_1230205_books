@@ -100,7 +100,6 @@ pipeline {
                         echo 'Test failed on Dev. Aborting pipeline.'
                         currentBuild.result = 'FAILURE'
 
-                        // Trigger rollback
                         rollback('dev')
 
                         return
@@ -145,7 +144,7 @@ pipeline {
                         echo 'Test failed on Test. Aborting pipeline.'
                         currentBuild.result = 'FAILURE'
 
-                        // Trigger rollback
+
                         rollback('test')
 
                         return
@@ -189,7 +188,6 @@ pipeline {
                     if (!success) {
                         echo 'Test failed on Prod. Rolling back...'
 
-                        // Trigger rollback
                         rollback('prod')
 
                         return
