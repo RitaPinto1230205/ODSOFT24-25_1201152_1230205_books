@@ -119,35 +119,50 @@ pipeline {
                     }
                 }
 
-        stage('Deploy Using Docker Compose') {
-            steps {
-                dir('lms-books') {
-                    script {
-                        if (isUnix()) {
-                            sh '''
-                                docker-compose down
-                                docker-compose pull
-                                docker-compose up -d
-                            '''
-                        } else {
-                            bat '''
-                                docker-compose down
-                                docker-compose pull
-                                docker-compose up -d
-                            '''
+        stage('Deploy with Docker Compose') {
+                    steps {
+                        script {
+                            sh """
+
+                                if ! docker ps --filter "name=rabbitmq_in_lms_network" --format '{{.Names}}' | grep -q rabbitmq_in_lms_network; then
+                                  docker compose -f docker-compose-rabbitmq.yml up -d
+                                else
+                                  echo "RabbitMQ container already running."
+                                fi
+
+                                if ! docker ps --filter "name=postgres_in_lms_network" --format '{{.Names}}' | grep -q postgres_in_lms_network; then
+                                  docker compose -f docker-compose-postgres.yml up -d
+                                else
+                                  echo "Postgres container already running."
+                                fi
+
+
+                                docker compose -f docker-compose.yml up -d --force-recreate
+
+                            """
                         }
                     }
                 }
             }
-        }
-    }
 
-    post {
-        success {
-            echo 'Pipeline completed successfully!'
+            post {
+                success {
+                    echo 'Pipeline completed successfully!'
+                }
+                failure {
+                    echo 'Pipeline failed!'
+                }
+            }
+
+
+        ////if containers are to be removed
+        //     post {
+        //         always {
+        //             echo 'Cleaning up...'
+        //             sh """
+        //                 docker compose -f docker-compose.yml down || true
+        //             """
+        //         }
+        //     }
+
         }
-        failure {
-            echo 'Pipeline failed!'
-        }
-    }
-}
