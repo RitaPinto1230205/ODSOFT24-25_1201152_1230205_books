@@ -101,7 +101,7 @@ pipeline {
                       echo 'Test failed on Testing Environment.'
                         //currentBuild.result = 'FAILURE'
 
-                       // rollback('dev')
+                      rollback('dev')
 
                         return
                     } else {
@@ -147,7 +147,7 @@ pipeline {
                         echo 'Test failed on Test. Aborting pipeline.'
                         //currentBuild.result = 'FAILURE'
 
-                       // rollback('test')
+                        rollback('test')
 
                         return
                     } else {
@@ -192,7 +192,7 @@ pipeline {
                     if (!success) {
                         echo 'Test failed on Prod. Rolling back...'
 
-                       // rollback('prod')
+                        rollback('prod')
                         return
                     } else {
                         echo 'Tests passed on Prod.'
