@@ -28,6 +28,7 @@ import java.util.HashMap;
 
 import pt.psoft.g1.psoftg1.TestConfig;
 import pt.psoft.g1.psoftg1.authormanagement.model.Author;
+
 import pt.psoft.g1.psoftg1.bookmanagement.api.BookViewAMQPMapperImpl;
 import pt.psoft.g1.psoftg1.bookmanagement.infrastructure.publishers.impl.BookEventsRabbitmqPublisherImpl;
 import pt.psoft.g1.psoftg1.bookmanagement.publishers.BookEventsPublisher;
@@ -41,7 +42,9 @@ import java.util.List;
 @Import(TestConfig.class)
 @SpringBootTest(
          webEnvironment = SpringBootTest.WebEnvironment.NONE
-        ,classes = {BookEventsRabbitmqPublisherImpl.class, BookService.class, BookViewAMQPMapperImpl.class}
+        ,classes = {BookEventsRabbitmqPublisherImpl.class,
+        BookService.class,
+        BookViewAMQPMapperImpl.class }
         , properties = {
                 "stubrunner.amqp.mockConnection=true",
                 "spring.profiles.active=test"
