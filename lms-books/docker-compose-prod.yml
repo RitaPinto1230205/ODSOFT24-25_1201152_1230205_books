@@ -3,7 +3,7 @@ services:
   book01:
     image: lmsbooks:latest
     ports:
-      - "7039-7046:8080"  # Dynamically allocate ports between 8087 and 8088
+      - "7073-7076:8080"  # Dynamically allocate ports between 8087 and 8088
     environment:
       SPRING_PROFILES_ACTIVE: instance1,bootstrap,prod
     networks:
@@ -17,7 +17,7 @@ services:
   book02:
     image: lmsbooks:latest
     ports:
-      - "7047-7057:8080"  # Dynamically allocate ports between 8089 and 8090
+      - "7077-7080:8080"  # Dynamically allocate ports between 8089 and 8090
     environment:
       SPRING_PROFILES_ACTIVE: instance2,bootstrap,prod
     networks:
