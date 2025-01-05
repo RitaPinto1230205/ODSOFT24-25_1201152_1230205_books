@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     environment {
+       PATH = "/usr/local/bin:${env.PATH}"
         MAVEN_HOME = '/opt/homebrew'
         DOCKER_HOST = 'unix:///var/run/docker.sock'
         DOCKER_BINARY = '/usr/local/bin/docker'
