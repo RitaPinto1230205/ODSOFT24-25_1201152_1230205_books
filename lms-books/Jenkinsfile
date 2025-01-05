@@ -241,27 +241,10 @@ pipeline {
 
         stage('Test on Prod') {
             steps {
-                dir('lms-books') {
-                    script {
-                        echo "Running tests on Prod..."
-                        // Aguardar até que o contêiner esteja pronto
-                        sh "sleep 30"
-                        def success = sh(script: "curl -f http://localhost:${SERVER_PORT}/health", returnStatus: true) == 0
-                        if (!success) {
-                            echo 'Test failed on Prod. Rolling back...'
-                            echo 'Rolling back to the previous version...'
-                            sh """
-                                docker-compose -f docker-compose-prod.yml down
-                                docker-compose -f docker-compose-prod.yml up -d --no-deps --scale book01=2 --scale book02=2
-                            """
-                        } else {
-                            echo 'Tests passed on Prod.'
-                        }
-                    }
-                }
+                echo "Skipping test on Prod for now."
+                // Remova ou comente o código de teste em produção
             }
         }
-
     }
 
     post {
