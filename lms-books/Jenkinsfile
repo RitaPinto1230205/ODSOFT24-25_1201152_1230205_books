@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-       PATH = "/usr/local/bin:${env.PATH}"
         MAVEN_HOME = '/opt/homebrew'
         DOCKER_HOST = 'unix:///var/run/docker.sock'
         DOCKER_BINARY = '/usr/local/bin/docker'
@@ -11,25 +10,26 @@ pipeline {
         IMAGE_TAG = 'latest'
         GITHUB_TOKEN_ID = 'GITHUB_TOKEN'
         DEPLOYMENT_APPROVED = false
-        ENVIRONMENT = 'dev'
     }
 
     stages {
-        stage('Install Java 21.0.4-amzn with SDKMAN!') {
-            steps {
-                script {
-                    sh '''
-                        if [ ! -d "$HOME/.sdkman" ]; then
-                          curl -s "https://get.sdkman.io" | bash
-                          source "$HOME/.sdkman/bin/sdkman-init.sh"
-                        fi
-                        source "$HOME/.sdkman/bin/sdkman-init.sh"
-                        sdk install java 21.0.4-amzn || true  # Ignora se já estiver instalado
-                        sdk default java 21.0.4-amzn
-                    '''
-                }
-            }
-        }
+          stage('Install Java 21.0.4-amzn with SDKMAN!') {
+                        steps {
+                            script {
+                                sh '''
+                                    # Instalar SDKMAN! (se necessário)
+                                    if [ ! -d "$HOME/.sdkman" ]; then
+                                      curl -s "https://get.sdkman.io" | bash
+                                      source "$HOME/.sdkman/bin/sdkman-init.sh"
+                                    fi
+                                    # Instalar a versão do Java 21.0.4-amzn
+                                    source "$HOME/.sdkman/bin/sdkman-init.sh"
+                                    sdk install java 21.0.4-amzn || true  # Ignora se já estiver instalado
+                                    sdk default java 21.0.4-amzn
+                                '''
+                            }
+                        }
+                    }
 
         stage('Check Out') {
             steps {
@@ -66,14 +66,23 @@ pipeline {
             }
         }
 
-
-        stage('Run Tests Against Container') {
+       stage('Build Docker Image') {
             steps {
                 dir('lms-books') {
                     script {
-                        sh """
-                            ${MAVEN_HOME}/bin/mvn verify -Dtest.container.url=http://localhost:${SERVER_PORT}
-                        """
+                        withCredentials([string(credentialsId: GITHUB_TOKEN_ID, variable: 'GITHUB_TOKEN')]) {
+                            if (isUnix()) {
+                                sh """
+                                    echo \$GITHUB_TOKEN | docker login ghcr.io -u RitaPinto1230205 --password-stdin
+                                    docker build -t ${IMAGE_NAME}:latest .
+                                """
+                            } else {
+                                bat """
+                                    echo %GITHUB_TOKEN% | docker login ghcr.io -u RitaPinto1230205 --password-stdin
+                                    docker build -t ${IMAGE_NAME}:latest .
+                                """
+                            }
+                        }
                     }
                 }
             }
@@ -84,165 +93,51 @@ pipeline {
                 dir('lms-books') {
                     script {
                         withCredentials([string(credentialsId: GITHUB_TOKEN_ID, variable: 'GITHUB_TOKEN')]) {
-                            echo 'Pushing Docker image to registry...'
-                            sh """
-                                docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                            """
+                            if (isUnix()) {
+                                sh """
+                                    docker push ${IMAGE_NAME}:latest
+                                """
+                            } else {
+                                bat """
+                                    docker push ${IMAGE_NAME}:latest
+                                """
+                            }
                         }
                     }
                 }
             }
         }
 
-        stage('Scale Up and Down Services') {
-            steps {
-                script {
-                    def scaling = input(
-                        message: 'Specify scaling action and instances for book01 and book02:',
-                        parameters: [
-                            choice(
-                                choices: ['Scale Up', 'Scale Down'],
-                                description: 'Choose whether to scale up or scale down the services.',
-                                name: 'scaleAction'
-                            ),
-                            string(
-                                defaultValue: '4',
-                                description: 'Number of instances for book01',
-                                name: 'scaleBook01'
-                            ),
-                            string(
-                                defaultValue: '4',
-                                description: 'Number of instances for book02',
-                                name: 'scaleBook02'
-                            )
+         stage('Wait for Manual Approval') {
+                    steps {
+                        input message: 'Deployment is ready. Do you want to continue?', parameters: [
+                            booleanParam(defaultValue: false, description: 'Approve deployment?', name: 'DeployApproval')
                         ]
-                    )
-
-                    echo "Scaling action: ${scaling.scaleAction}"
-                    echo "Scaling services: book01=${scaling.scaleBook01}, book02=${scaling.scaleBook02}"
-
-                    dir('lms-books') {
-                        echo "Scaling down existing services..."
-                        sh """
-                            docker-compose -f docker-compose-test.yml down --remove-orphans
-                        """
-
-                        if (scaling.scaleAction == 'Scale Up') {
-                            echo "Scaling up services..."
-                            sh """
-                                docker-compose -f docker-compose-test.yml up --scale book01=${scaling.scaleBook01} --scale book02=${scaling.scaleBook02} -d
-                            """
-                        } else if (scaling.scaleAction == 'Scale Down') {
-                            echo "Scaling down services..."
-                            sh """
-                                docker-compose -f docker-compose-test.yml up --scale book01=0 --scale book02=0 -d
-                            """
+                        script {
+                            DEPLOYMENT_APPROVED = params.DeployApproval
                         }
                     }
                 }
-            }
-        }
 
-        stage('Deploy to Dev') {
+        stage('Deploy Using Docker Compose') {
             steps {
-             dir('lms-books') {
-                script {
-                    echo "Deploying to Dev environment..."
-                    sh """
-                        docker-compose -f docker-compose-dev.yml down --remove-orphans
-                        docker-compose -f docker-compose-dev.yml up -d --force-recreate
-                    """
-                }
-                }
-            }
-        }
-
-        stage('Test on Dev') {
-            steps {
-                script {
-                    echo "Running tests on Dev..."
-                    def success = sh(script: "curl -f http://localhost:${SERVER_PORT}/health", returnStatus: true) == 0
-                    if (!success) {
-                        echo 'Test failed on Dev. Aborting pipeline.'
-                        currentBuild.result = 'FAILURE'
-                        return
-                    } else {
-                        echo 'Tests passed on Dev.'
+                dir('lms-books') {
+                    script {
+                        if (isUnix()) {
+                            sh '''
+                                docker-compose down
+                                docker-compose pull
+                                docker-compose up -d
+                            '''
+                        } else {
+                            bat '''
+                                docker-compose down
+                                docker-compose pull
+                                docker-compose up -d
+                            '''
+                        }
                     }
                 }
-            }
-        }
-
-        stage('Wait for Manual Approval to Deploy to Test') {
-            steps {
-                input message: 'Approve deploy to Test?', parameters: [
-                    booleanParam(defaultValue: false, description: 'Approve deploy?', name: 'DeployApproval')
-                ]
-                script {
-                    DEPLOYMENT_APPROVED = params.DeployApproval
-                }
-            }
-        }
-
-        stage('Deploy to Test') {
-            steps {
-             dir('lms-books') {
-                script {
-                    echo "Deploying to Test environment..."
-                    sh """
-                        docker-compose -f docker-compose-test.yml down --remove-orphans
-                        docker-compose -f docker-compose-test.yml up -d --force-recreate
-                    """
-                }
-                }
-            }
-        }
-
-        stage('Test on Test') {
-            steps {
-                script {
-                    echo "Running tests on Test..."
-                    def success = sh(script: "curl -f http://localhost:${SERVER_PORT}/health", returnStatus: true) == 0
-                    if (!success) {
-                        echo 'Test failed on Test. Aborting pipeline.'
-                        currentBuild.result = 'FAILURE'
-                        return
-                    } else {
-                        echo 'Tests passed on Test.'
-                    }
-                }
-            }
-        }
-
-        stage('Wait for Manual Approval to Deploy to Prod') {
-            steps {
-                input message: 'Approve deploy to Prod?', parameters: [
-                    booleanParam(defaultValue: false, description: 'Approve deploy?', name: 'DeployApproval')
-                ]
-                script {
-                    DEPLOYMENT_APPROVED = params.DeployApproval
-                }
-            }
-        }
-
-        stage('Deploy to Prod') {
-            steps {
-             dir('lms-books') {
-                script {
-                    echo "Deploying to Prod environment..."
-                    sh """
-                        docker-compose -f docker-compose-prod.yml down --remove-orphans
-                        docker-compose -f docker-compose-prod.yml up -d --force-recreate
-                    """
-                }
-                }
-            }
-        }
-
-        stage('Test on Prod') {
-            steps {
-                echo "Skipping test on Prod for now."
-                // Remova ou comente o código de teste em produção
             }
         }
     }
