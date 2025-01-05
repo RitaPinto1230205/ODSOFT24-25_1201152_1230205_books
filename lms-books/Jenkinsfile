@@ -294,7 +294,7 @@ pipeline {
                        def success = sh(script: "curl -f http://localhost:${SERVER_PORT}/health", returnStatus: true) == 0
                        if (!success) {
                            echo 'New version failed health checks. Aborting deployment.'
-                           // Se falhar, derruba a versão nova e aborta o pipeline
+
                            sh """
                                docker-compose -f docker-compose-prod.yml -p new_version down
                            """
@@ -302,7 +302,7 @@ pipeline {
                        }
 
                        echo 'Switching to the new version...'
-                       // Derruba os serviços antigos e sobe os novos com os prefixos "new_version"
+
                        sh """
                            docker-compose -f docker-compose-prod.yml -p old_version down --remove-orphans
                            docker-compose -f docker-compose-prod.yml -p new_version up -d
