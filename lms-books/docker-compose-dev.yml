@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "7072-7078:8080"
+      - "7062-7078:8080"
     environment:
       SPRING_PROFILES_ACTIVE: instance1,bootstrap,dev
     networks:
@@ -22,7 +22,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "7078-7082:8080"
+      - "7078-7086:8080"
     environment:
       SPRING_PROFILES_ACTIVE: instance2,bootstrap,dev
     networks:
