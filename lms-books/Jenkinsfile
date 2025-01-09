@@ -285,16 +285,13 @@ pipeline {
                    script {
                        echo 'Starting Zero Downtime Deployment...'
 
-                       // Inicia a nova versão do serviço com o prefixo "new_version"
+
                        sh """
                            docker-compose -f docker-compose-prod.yml -p new_version up -d --build
                        """
-
-                       // Verifica se a nova versão passou nos testes de saúde
                        def success = sh(script: "curl -f http://localhost:${SERVER_PORT}/health", returnStatus: true) == 0
                        if (!success) {
-                           //echo 'New version failed health checks. Aborting deployment.'
-
+                        '
                            sh """
                                docker-compose -f docker-compose-prod.yml -p new_version down
                            """
@@ -314,7 +311,28 @@ pipeline {
            }
        }
     }
-
+/*
+ stage('Deploy Using Docker Compose') {
+            steps {
+                dir('lms-books') {
+                    script {
+                        if (isUnix()) {
+                            sh '''
+                                docker-compose down
+                                docker-compose pull
+                                docker-compose up -d
+                            '''
+                        } else {
+                            bat '''
+                                docker-compose down
+                                docker-compose pull
+                                docker-compose up -d
+                            '''
+                        }
+                    }
+                }
+            }
+*/
     post {
         success {
             echo 'Pipeline completed successfully!'
